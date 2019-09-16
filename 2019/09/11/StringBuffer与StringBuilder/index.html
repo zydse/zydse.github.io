@@ -6,15 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="http://yoursite.com">
-  <title>Archives: 2019 | zydse的博客</title>
+  <title>StringBuffer与StringBuilder | zydse的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="zydse的博客">
-<meta property="og:url" content="http://yoursite.com/archives/2019/index.html">
+  <meta name="description" content="最开始学习Java，在讲到String时，老师说String类有常量池技术但没有仔细讲。后来陆陆续续看了一些博文，有一些了解。今天在搜索线程安全时又看到了StringBuffer与StringBuilder的线程安全区别，经过亲手实验，有一些体会。刚好趁这个机会总结一下。 String与常量池JVM的对String对象的管理用到了三块内存区域：java栈、常量池、java堆。当我们使用如下代码创建">
+<meta name="keywords" content="学习,java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="StringBuffer与StringBuilder">
+<meta property="og:url" content="http://yoursite.com/2019/09/11/StringBuffer与StringBuilder/index.html">
 <meta property="og:site_name" content="zydse的博客">
+<meta property="og:description" content="最开始学习Java，在讲到String时，老师说String类有常量池技术但没有仔细讲。后来陆陆续续看了一些博文，有一些了解。今天在搜索线程安全时又看到了StringBuffer与StringBuilder的线程安全区别，经过亲手实验，有一些体会。刚好趁这个机会总结一下。 String与常量池JVM的对String对象的管理用到了三块内存区域：java栈、常量池、java堆。当我们使用如下代码创建">
 <meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-09-16T14:07:28.648Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="zydse的博客">
+<meta name="twitter:title" content="StringBuffer与StringBuilder">
+<meta name="twitter:description" content="最开始学习Java，在讲到String时，老师说String类有常量池技术但没有仔细讲。后来陆陆续续看了一些博文，有一些了解。今天在搜索线程安全时又看到了StringBuffer与StringBuilder的线程安全区别，经过亲手实验，有一些体会。刚好趁这个机会总结一下。 String与常量池JVM的对String对象的管理用到了三块内存区域：java栈、常量池、java堆。当我们使用如下代码创建">
   
     <link rel="alternative" href="/atom.xml" title="zydse的博客" type="application/atom+xml">
   
@@ -147,36 +152,71 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-StringBuffer与StringBuilder" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/09/11/StringBuffer与StringBuilder/" class="archive-article-date">
-  	<time datetime="2019-09-11T10:24:29.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-09-11</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/11/StringBuffer与StringBuilder/">StringBuffer与StringBuilder</a>
+    <h1 class="article-title" itemprop="name">
+      StringBuffer与StringBuilder
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
+        
+        <a href="/2019/09/11/StringBuffer与StringBuilder/" class="archive-article-date">
+  	<time datetime="2019-09-11T10:24:29.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-09-11</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最开始学习Java，在讲到String时，老师说String类有常量池技术但没有仔细讲。后来陆陆续续看了一些博文，有一些了解。今天在搜索线程安全时又看到了StringBuffer与StringBuilder的线程安全区别，经过亲手实验，有一些体会。刚好趁这个机会总结一下。</p>
+<h2 id="String与常量池"><a href="#String与常量池" class="headerlink" title="String与常量池"></a>String与常量池</h2><p>JVM的对String对象的管理用到了三块内存区域：java栈、常量池、java堆。当我们使用如下代码创建对象时</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">String str1 = <span class="string">"apple"</span>;</span><br><span class="line">String str2 = <span class="keyword">new</span> String(<span class="string">"orange"</span>);</span><br></pre></td></tr></table></figure>
+
+<p>str1与str2对象的引用存在java栈区中，”apple”存在常量池中，”orange”在常量池与堆区中均存在。引用str1指向常量池中的”apple”,引用str2指向堆区中的”orange”。此时，如果我们再使用如下代码创建str3、str4、str5对象。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String str3 = <span class="string">"apple"</span>;</span><br><span class="line">String str4 = <span class="string">"orange"</span>;</span><br><span class="line">String str5 = <span class="keyword">new</span> String(<span class="string">"apple"</span>);</span><br></pre></td></tr></table></figure>
+
+<a id="more"></a>
+<p>此时的str3对象与str1对象一样，指向常量池中的”apple”，它并没有创建新的对象，而是直接指向了”apple”，所以使用<strong>“str3 == str1”</strong>的运算结果会是true。</p>
+<p>而str5的创建过程与str2相同，由于常量池中已经存在”apple”，str5会在堆区中创建一个”apple”并指向它。使用<strong>“str5 == str1”</strong>或者<strong>“str5 == str3”</strong>会返回false。同样的，str4是常量池中的”orange”，<strong>“str3 == str2”</strong>也会返回false。</p>
+<p>常量池中的字符串对象还有一个重要特性是，它们是不可改变的，假如执行如下代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">str1 += <span class="string">" and banana"</span>;</span><br></pre></td></tr></table></figure>
+
+<p>我们在str1后追加了字符串，看起来我们并没有改变str1对象的头部。那么它的引用指向是否不改变，而只是在”apple”后接上字符串” and banana”呢？答案是否定的，常量池中会新建一个对象”apple and banana”，然后将str1引用指向它。所以此时使用<strong>“str1 == str3”</strong>返回的结果会是false。</p>
+<h2 id="StringBuffer与StringBuilder"><a href="#StringBuffer与StringBuilder" class="headerlink" title="StringBuffer与StringBuilder"></a>StringBuffer与StringBuilder</h2><p>StringBuffer与StringBuilder跟String类相比是没有常量池的。他们的对象都会在堆区创建，任意两个对象使用<strong><em>==</em></strong>运算符的计算结果都是false。他们两个的区别体现在线程的安全性上。StringBuffer的对象是线程安全的，而StringBuilder则不然。</p>
+<p>线程安全表示在多线程并发操作的环境下，该对象能够保持线程同步，不会由于并发操作产生错误。StringBuffer就是这样一个类，它的内部方法都加上了synchronize关键字，这能够保证它的对象在多线程并发下的正确性。而StringBuilder没有这个特性，在多线程环境下，要么不使用它，要么自己控制同步逻辑。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span></span>&#123;</span><br><span class="line">	<span class="keyword">private</span> StringBuffer s;</span><br><span class="line">	<span class="keyword">private</span> CountDownLatch latch;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">MyThread</span><span class="params">(StringBuffer s,CountDownLatch latch)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">this</span>.s = s;</span><br><span class="line">		<span class="keyword">this</span>.latch = latch;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		s.append(<span class="string">"a"</span>);</span><br><span class="line">		latch.countDown();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
+        </div>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -192,130 +232,106 @@
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=http://yoursite.com/2019/09/11/StringBuffer与StringBuilder/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/09/10/Git-study-notes/" class="archive-article-date">
-  	<time datetime="2019-09-10T06:54:38.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-09-10</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2019/09/10/Git-study-notes/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Git study notes</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/10/Git-study-notes/">Git study notes</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">git</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">学习</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/09/08/Try-to-Write/" class="archive-article-date">
-  	<time datetime="2019-09-08T07:04:02.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-09-08</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/08/Try-to-Write/">Try to Write</a>
-    </h1>
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">学习</a>
-        		</li>
-      		 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color4">markdown</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2019/09/07/hello-world/" class="archive-article-date">
-  	<time datetime="2019-09-07T07:53:36.411Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-09-07</time>
-</a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/09/07/hello-world/">Hello World</a>
-    </h1>
   
 
-        <div class="article-info info-on-right">
-          
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
   
-  
-    </div></section>
-  
-
-    
 
 
           </div>
@@ -338,8 +354,8 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
